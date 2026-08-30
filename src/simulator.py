@@ -1,15 +1,15 @@
-
 def simulate_flood(routes):
     """
-    Simulate a flood affecting Route A.
+    Simulate flooding on a specific road segment.
     """
 
     routes = routes.copy()
 
-    mask = routes["route_id"] == "A"
+    # Flood affects Singtam → Ranipool
+    mask = routes["route_id"] == "A2"
 
     routes.loc[mask, "rainfall"] = 85
-    routes.loc[mask, "flood_risk"] = 85
+    routes.loc[mask, "flood_risk"] = 90
     routes.loc[mask, "blockage"] = 1
 
     return routes
@@ -17,15 +17,16 @@ def simulate_flood(routes):
 
 def simulate_landslide(routes):
     """
-    Simulate a landslide affecting Route A.
+    Simulate a landslide on a specific road segment.
     """
 
     routes = routes.copy()
 
-    mask = routes["route_id"] == "A"
+    # Landslide affects Singtam → Ranipool
+    mask = routes["route_id"] == "A2"
 
     routes.loc[mask, "rainfall"] = 75
-    routes.loc[mask, "landslide_risk"] = 90
+    routes.loc[mask, "landslide_risk"] = 95
     routes.loc[mask, "blockage"] = 1
 
     return routes
@@ -33,12 +34,13 @@ def simulate_landslide(routes):
 
 def simulate_road_blockage(routes):
     """
-    Simulate a complete road blockage.
+    Simulate a complete blockage of a road segment.
     """
 
     routes = routes.copy()
 
-    mask = routes["route_id"] == "A"
+    # Road blockage affects Singtam → Ranipool
+    mask = routes["route_id"] == "A2"
 
     routes.loc[mask, "blockage"] = 1
 
@@ -47,16 +49,17 @@ def simulate_road_blockage(routes):
 
 def reset_simulation(routes):
     """
-    Reset the simulation to normal conditions.
+    Reset all simulated conditions.
     """
 
     routes = routes.copy()
 
-    mask = routes["route_id"] == "A"
+    # Reset affected segment
+    mask = routes["route_id"] == "A2"
 
     routes.loc[mask, "rainfall"] = 20
-    routes.loc[mask, "flood_risk"] = 15
-    routes.loc[mask, "landslide_risk"] = 10
+    routes.loc[mask, "flood_risk"] = 20
+    routes.loc[mask, "landslide_risk"] = 15
     routes.loc[mask, "blockage"] = 0
 
     return routes
