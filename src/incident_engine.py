@@ -1,111 +1,46 @@
+"""
+incident_engine.py
+Handles field-officer incident reports (blocked roads, floods, accidents
+spotted on the ground) and folds them into the affected road segment's risk.
+"""
+import time
+import uuid
 
-import pandas as pd
+INCIDENT_TYPES = ["Road Blockage", "Flood", "Landslide", "Accident", "Bridge Damage"]
 
-
-def get_incident_risk(severity):
-    """
-    Convert incident severity into a risk value.
-    """
-
-    severity = str(severity).lower()
-
-    if severity == "low":
-        return 20
-
-    elif severity == "medium":
-        return 50
-
-    elif severity == "high":
-        return 80
-
-    elif severity == "critical":
-        return 100
-
-    return 0
+_log = []  # in-memory report log, mirrors data/incidents.csv
 
 
-def get_incident_icon(incident_type):
-    """
-    Return an icon based on incident type.
-    """
+def submit_incident(edges, edge_id, incident_type, severity, description=""):
+    if edge_id not in edges:
+        raise ValueError(f"Unknown edge_id: {edge_id}")
+    if incident_type not in INCIDENT_TYPES:
+        raise ValueError(f"Unknown incident_type: {incident_type}")
 
-    incident_type = str(incident_type).lower()
+    edge = edges[edge_id]
+    edge["incident_risk"] = min(100.0, edge["incident_risk"] + float(severity))
+    if incident_type in ("Road Blockage", "Bridge Damage") and severity >= 60:
+        edge["status"] = "blocked"
+    elif edge["incident_risk"] >= 40:
+        edge["status"] = "risky"
 
-    if "flood" in incident_type:
-        return "🌊"
-
-    elif "landslide" in incident_type:
-        return "⛰️"
-
-    elif "road" in incident_type:
-        return "🛣️"
-
-    elif "bridge" in incident_type:
-        return "🌉"
-
-    elif "rain" in incident_type:
-        return "🌧️"
-
-    return "⚠️"
-
-
-def process_incidents(incidents):
-    """
-    Process incident data and add
-    risk and display information.
-    """
-
-    incidents = incidents.copy()
-
-    incidents["incident_risk"] = incidents[
-        "severity"
-    ].apply(get_incident_risk)
-
-    incidents["icon"] = incidents[
-        "type"
-    ].apply(get_incident_icon)
-
-    return incidents
-
-
-def get_active_incidents(incidents):
-    """
-    Return only currently active incidents.
-    """
-
-    return incidents[
-        incidents["status"].str.lower() == "active"
-    ].copy()
-
-
-def create_incident(
-    incident_id,
-    incident_type,
-    location,
-    severity,
-    status="Active"
-):
-    """
-    Create a new field incident report.
-    """
-
-    return {
-        "incident_id": incident_id,
-        "type": incident_type,
-        "location": location,
+    report = {
+        "incident_id": str(uuid.uuid4())[:8],
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "edge_id": edge_id,
+        "incident_type": incident_type,
         "severity": severity,
-        "status": status
+        "description": description,
     }
+    _log.append(report)
+    return report
 
 
-def add_incident(incidents, incident):
-    """
-    Add a new incident to the incident DataFrame.
-    """
+def get_log():
+    return list(reversed(_log))
 
-    new_incident = pd.DataFrame([incident])
 
-    return pd.concat(
-        [incidents, new_incident],
-        ignore_index=True
-    )
+def reset(edges):
+    for edge in edges.values():
+        edge["incident_risk"] = 0.0
+    _log.clear()
