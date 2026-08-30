@@ -4,34 +4,32 @@ import networkx as nx
 
 def calculate_route_cost(distance, travel_time, risk):
     """
-    Calculate the total cost of a route.
+    Calculate weighted cost for a road segment.
 
     Lower cost = better route.
-
-    Cost =
-        Distance × 1
-        + Travel Time × 1
-        + Risk × 0.5
     """
 
     return (
-        (distance * 1)
-        + (travel_time * 1)
+        distance
+        + travel_time
         + (risk * 0.5)
     )
 
 
 def build_graph(routes):
     """
-    Build a weighted graph from route data.
+    Build a road network graph.
+
+    Each row represents a road segment.
+    Blocked roads are excluded.
     """
 
     graph = nx.DiGraph()
 
     for _, route in routes.iterrows():
 
-        # Ignore blocked roads
-        if route["blockage"] == 1:
+        # Do not use blocked roads
+        if int(route["blockage"]) == 1:
             continue
 
         cost = calculate_route_cost(
@@ -44,13 +42,20 @@ def build_graph(routes):
             route["source"],
             route["destination"],
             weight=cost,
-            route_id=route["route_id"]
+            route_id=route["route_id"],
+            distance=route["distance_km"],
+            travel_time=route["travel_time_min"],
+            risk=route["risk"]
         )
 
     return graph
 
 
-def find_best_route(routes):
+def find_best_route(
+    routes,
+    source=None,
+    destination=None
+):
     """
     Find the lowest-cost route using Dijkstra's algorithm.
     """
@@ -60,8 +65,11 @@ def find_best_route(routes):
     if graph.number_of_edges() == 0:
         return None
 
-    source = routes.iloc[0]["source"]
-    destination = routes.iloc[0]["destination"]
+    if source is None:
+        source = routes.iloc[0]["source"]
+
+    if destination is None:
+        destination = routes.iloc[0]["destination"]
 
     try:
 
@@ -72,13 +80,32 @@ def find_best_route(routes):
             weight="weight"
         )
 
-        route_id = graph[
-            path[0]
-        ][
-            path[1]
-        ]["route_id"]
+        total_cost = nx.shortest_path_length(
+            graph,
+            source=source,
+            target=destination,
+            weight="weight"
+        )
 
-        return route_id
+        route_ids = []
+
+        for i in range(len(path) - 1):
+
+            edge = graph[
+                path[i]
+            ][
+                path[i + 1]
+            ]
+
+            route_ids.append(
+                edge["route_id"]
+            )
+
+        return {
+            "path": path,
+            "route_ids": route_ids,
+            "total_cost": round(total_cost, 2)
+        }
 
     except nx.NetworkXNoPath:
 
