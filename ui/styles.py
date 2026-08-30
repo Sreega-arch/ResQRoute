@@ -1,126 +1,170 @@
-
 import streamlit as st
 
 
 def load_css():
-    """Apply ResORoute dashboard styling."""
 
     st.markdown(
         """
         <style>
 
-        /* ---------- Main Page ---------- */
+        /* =====================================================
+           GLOBAL
+        ===================================================== */
 
         .stApp {
-            background-color: #f5f7fa;
+            background-color: #f4f7fb;
+            color: #172033;
         }
 
         .block-container {
             max-width: 1400px;
-            padding-top: 1.5rem;
-            padding-bottom: 2rem;
+            padding-top: 2rem;
+            padding-bottom: 3rem;
         }
 
 
-        /* ---------- Header ---------- */
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
+
+        [data-testid="stSidebar"] {
+            background-color: #172033;
+        }
+
+        [data-testid="stSidebar"] * {
+            color: white !important;
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
 
         .resoroute-header {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px 26px;
-            margin-bottom: 20px;
+            background: white;
+            padding: 25px 30px;
+            border-radius: 18px;
+            border: 1px solid #dfe5ef;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
         .resoroute-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: #163b65;
-            margin: 0;
+            font-size: 38px;
+            font-weight: 800;
+            color: #173f73;
+            margin-bottom: 5px;
         }
 
         .resoroute-subtitle {
-            font-size: 14px;
+            font-size: 17px;
             color: #64748b;
-            margin-top: 4px;
         }
 
 
-        /* ---------- Section Titles ---------- */
+        /* =====================================================
+           SECTION TITLES
+           ===================================================== */
 
         .section-title {
-            font-size: 19px;
-            font-weight: 700;
-            color: #163b65;
-            margin-top: 10px;
-            margin-bottom: 12px;
+            font-size: 26px;
+            font-weight: 800;
+            color: #173f73;
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
 
 
-        /* ---------- Route Cards ---------- */
+        /* =====================================================
+           METRICS
+           ===================================================== */
+
+        [data-testid="stMetric"] {
+            background: white;
+            border: 1px solid #dfe5ef;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+        }
+
+        [data-testid="stMetricLabel"] {
+            color: #526173 !important;
+        }
+
+        [data-testid="stMetricValue"] {
+            color: #173f73 !important;
+            font-weight: 800;
+        }
+
+
+        /* =====================================================
+           ROUTE CARDS
+           ===================================================== */
 
         .route-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 16px;
+            background: white;
+            border: 1px solid #dfe5ef;
+            border-radius: 14px;
+            padding: 18px;
             margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+            color: #172033;
         }
 
         .route-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #163b65;
+            font-size: 19px;
+            font-weight: 800;
+            color: #173f73;
         }
 
 
-        /* ---------- Alerts ---------- */
+        /* =====================================================
+           ALERT
+           ===================================================== */
 
         .alert-danger {
-            background: #fff5f5;
+            background: #fff1f1;
             border-left: 5px solid #dc2626;
+            padding: 12px 16px;
             border-radius: 8px;
-            padding: 12px 15px;
             margin-bottom: 8px;
-            color: #7f1d1d;
-        }
-
-        .alert-warning {
-            background: #fffbeb;
-            border-left: 5px solid #f59e0b;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            color: #78350f;
-        }
-
-        .alert-success {
-            background: #f0fdf4;
-            border-left: 5px solid #16a34a;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            color: #14532d;
+            color: #991b1b;
+            font-weight: 600;
         }
 
 
-        /* ---------- Information Cards ---------- */
-
-        .info-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 14px;
-        }
-
-
-        /* ---------- Footer ---------- */
+        /* =====================================================
+           FOOTER
+           ===================================================== */
 
         .resoroute-footer {
+            background: #172033;
+            color: white;
             text-align: center;
-            color: #94a3b8;
-            font-size: 12px;
-            padding-top: 25px;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 35px;
+            font-size: 15px;
+        }
+
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .stButton > button {
+            border-radius: 9px;
+            font-weight: 600;
+        }
+
+
+        /* =====================================================
+           DATAFRAME
+           ===================================================== */
+
+        [data-testid="stDataFrame"] {
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         </style>
