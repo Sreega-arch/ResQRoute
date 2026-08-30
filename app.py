@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from src.data_loader import (
@@ -12,14 +11,22 @@ from src.data_loader import (
 
 from src.risk_engine import (
     calculate_risk,
-    get_risk_level,
-    get_risk_status
+    get_risk_level
 )
 
-from src.route_optimizer import find_best_route
+from src.route_optimizer import (
+    find_best_route
+)
+
+from src.weather_engine import (
+    process_weather_data
+)
+
+from src.traffic_engine import (
+    process_traffic_data
+)
 
 from src.incident_engine import (
-    process_incidents,
     create_incident,
     add_incident
 )
@@ -36,21 +43,17 @@ from src.simulator import (
     reset_simulation
 )
 
-from src.weather_engine import process_weather_data
-from src.traffic_engine import process_traffic_data
-
 from ui.styles import load_css
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE
 # ============================================================
 
 st.set_page_config(
     page_title="ResORoute",
     page_icon="🚚",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 load_css()
@@ -83,12 +86,15 @@ if "simulation" not in st.session_state:
 st.markdown(
     """
     <div class="resoroute-header">
+
         <div class="resoroute-title">
             🚚 ResORoute
         </div>
+
         <div class="resoroute-subtitle">
             AI-Powered Smart Routing & Risk Intelligence
         </div>
+
     </div>
     """,
     unsafe_allow_html=True
@@ -121,27 +127,37 @@ destination = st.sidebar.selectbox(
 
 vehicle_id = st.sidebar.selectbox(
     "Vehicle",
-    st.session_state.vehicles["vehicle_id"].tolist()
+    st.session_state.vehicles[
+        "vehicle_id"
+    ].tolist()
 )
 
 st.sidebar.divider()
 
-st.sidebar.subheader("🌧️ Disaster Simulation")
+st.sidebar.subheader(
+    "🌧️ Disaster Simulation"
+)
+
 
 if st.sidebar.button(
     "🌊 Simulate Flood",
     use_container_width=True
 ):
 
-    st.session_state.routes = simulate_flood(
-        st.session_state.routes
+    st.session_state.routes = (
+        simulate_flood(
+            st.session_state.routes
+        )
     )
 
-    st.session_state.simulation = "Flood"
+    st.session_state.simulation = (
+        "Flood"
+    )
 
     st.session_state.alerts.insert(
         0,
-        "🔴 Flood detected — Route A affected"
+        "🔴 Flood detected — "
+        "Singtam → Ranipool blocked"
     )
 
     st.rerun()
@@ -152,15 +168,20 @@ if st.sidebar.button(
     use_container_width=True
 ):
 
-    st.session_state.routes = simulate_landslide(
-        st.session_state.routes
+    st.session_state.routes = (
+        simulate_landslide(
+            st.session_state.routes
+        )
     )
 
-    st.session_state.simulation = "Landslide"
+    st.session_state.simulation = (
+        "Landslide"
+    )
 
     st.session_state.alerts.insert(
         0,
-        "🔴 Landslide detected — Route A affected"
+        "🔴 Landslide detected — "
+        "Singtam → Ranipool blocked"
     )
 
     st.rerun()
@@ -171,15 +192,20 @@ if st.sidebar.button(
     use_container_width=True
 ):
 
-    st.session_state.routes = simulate_road_blockage(
-        st.session_state.routes
+    st.session_state.routes = (
+        simulate_road_blockage(
+            st.session_state.routes
+        )
     )
 
-    st.session_state.simulation = "Road Blockage"
+    st.session_state.simulation = (
+        "Road Blockage"
+    )
 
     st.session_state.alerts.insert(
         0,
-        "🚧 Road blockage detected on Route A"
+        "🚧 Road blockage detected — "
+        "Route A segment unavailable"
     )
 
     st.rerun()
@@ -190,11 +216,16 @@ if st.sidebar.button(
     use_container_width=True
 ):
 
-    st.session_state.routes = reset_simulation(
-        st.session_state.routes
+    st.session_state.routes = (
+        reset_simulation(
+            st.session_state.routes
+        )
     )
 
-    st.session_state.simulation = "Normal"
+    st.session_state.simulation = (
+        "Normal"
+    )
+
     st.session_state.alerts = []
 
     st.rerun()
@@ -203,13 +234,13 @@ if st.sidebar.button(
 st.sidebar.divider()
 
 st.sidebar.info(
-    "Prototype Mode\n"
-    "Using synthetic NER logistics data."
+    "Prototype Mode\n\n"
+    "Synthetic NER logistics data"
 )
 
 
 # ============================================================
-# PROCESS ROUTE DATA
+# RISK CALCULATION
 # ============================================================
 
 routes = st.session_state.routes.copy()
@@ -225,62 +256,101 @@ routes["risk"] = routes.apply(
     axis=1
 )
 
-routes["risk_level"] = routes["risk"].apply(
-    get_risk_level
+routes["risk_level"] = (
+    routes["risk"]
+    .apply(get_risk_level)
 )
 
 
 # ============================================================
-# BEST ROUTE
+# DIJKSTRA
 # ============================================================
 
-best_route = find_best_route(routes)
+route_result = find_best_route(
+    routes,
+    source=origin,
+    destination=destination
+)
 
 
-# ============================================================
-# TOP METRICS
-# ============================================================
+if route_result:
 
-if best_route:
+    route_path = route_result[
+        "path"
+    ]
 
-    active_route = routes[
-        routes["route_id"] == best_route
-    ].iloc[0]
+    best_route_ids = route_result[
+        "route_ids"
+    ]
+
+    route_cost = route_result[
+        "total_cost"
+    ]
+
+    total_distance = route_result[
+        "total_distance"
+    ]
+
+    total_time = route_result[
+        "total_time"
+    ]
+
+    average_risk = route_result[
+        "average_risk"
+    ]
 
 else:
 
-    active_route = routes.iloc[0]
+    route_path = []
+    best_route_ids = []
+    route_cost = None
+    total_distance = 0
+    total_time = 0
+    average_risk = 0
 
-incident_count = len(
-    st.session_state.alerts
-)
+
+# ============================================================
+# METRICS
+# ============================================================
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
+
     st.metric(
-        "🚨 Active Incidents",
-        incident_count
+        "🚨 Active Alerts",
+        len(st.session_state.alerts)
     )
 
 with col2:
+
+    if route_path:
+
+        route_display = (
+            " → ".join(route_path)
+        )
+
+    else:
+
+        route_display = "Unavailable"
+
     st.metric(
-        "🛣️ Recommended Route",
-        f"Route {best_route}"
-        if best_route
-        else "None"
+        "🛣️ Recommended Path",
+        route_display
     )
 
 with col3:
+
     st.metric(
-        "⚠️ Route Risk",
-        f"{active_route['risk']:.0f}%"
+        "⚠️ Average Risk",
+        f"{average_risk:.0f}%"
     )
 
 with col4:
+
     st.metric(
         "⏱️ Estimated Time",
-        f"{active_route['travel_time_min']} min"
+        f"{total_time:.0f} min"
     )
 
 
@@ -288,7 +358,7 @@ st.divider()
 
 
 # ============================================================
-# MAIN DASHBOARD
+# MAP + ROUTE RECOMMENDATION
 # ============================================================
 
 map_col, route_col = st.columns(
@@ -303,7 +373,9 @@ map_col, route_col = st.columns(
 with map_col:
 
     st.markdown(
-        '<div class="section-title">🗺️ NER Logistics Network</div>',
+        '<div class="section-title">'
+        '🗺️ NER Logistics Network'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -311,110 +383,145 @@ with map_col:
         figsize=(9, 5)
     )
 
-    # ------------------------------
     # Route A
-    # ------------------------------
-
     route_a_x = [
-        1, 2.5, 4, 5.5, 7
+        1,
+        2.5,
+        4,
+        5.5,
+        7
     ]
 
     route_a_y = [
-        4, 3.7, 3.2, 2.2, 1
+        4,
+        3.7,
+        3.2,
+        2.2,
+        1
     ]
 
-    route_a = routes[
-        routes["route_id"] == "A"
-    ].iloc[0]
+    route_a_ids = [
+        "A1",
+        "A2",
+        "A3"
+    ]
 
-    if route_a["blockage"] == 1:
+    for i in range(3):
 
-        ax.plot(
-            route_a_x,
-            route_a_y,
-            linestyle="--",
-            linewidth=3,
-            label="Route A — Blocked"
-        )
+        segment = routes[
+            routes["route_id"]
+            == route_a_ids[i]
+        ].iloc[0]
 
-    else:
+        x = [
+            route_a_x[i],
+            route_a_x[i + 1]
+        ]
 
-        ax.plot(
-            route_a_x,
-            route_a_y,
-            linewidth=3,
-            label="Route A"
-        )
+        y = [
+            route_a_y[i],
+            route_a_y[i + 1]
+        ]
+
+        if segment["blockage"] == 1:
+
+            ax.plot(
+                x,
+                y,
+                linestyle="--",
+                linewidth=4,
+                label=(
+                    "Blocked Segment"
+                    if i == 1
+                    else None
+                )
+            )
+
+        else:
+
+            ax.plot(
+                x,
+                y,
+                linewidth=3,
+                label=(
+                    "Route A"
+                    if i == 0
+                    else None
+                )
+            )
 
 
-    # ------------------------------
     # Route B
-    # ------------------------------
-
     route_b_x = [
-        1, 2.2, 3.5, 5, 7
+        1,
+        2.2,
+        3.5,
+        5,
+        7
     ]
 
     route_b_y = [
-        4, 4.8, 4.6, 3.5, 1
+        4,
+        4.8,
+        4.6,
+        3.5,
+        1
     ]
 
-    ax.plot(
-        route_b_x,
-        route_b_y,
-        linestyle="--",
-        linewidth=3,
-        label="Route B"
-    )
+    route_b_ids = [
+        "B1",
+        "B2",
+        "B3"
+    ]
+
+    for i in range(3):
+
+        segment = routes[
+            routes["route_id"]
+            == route_b_ids[i]
+        ].iloc[0]
+
+        x = [
+            route_b_x[i],
+            route_b_x[i + 1]
+        ]
+
+        y = [
+            route_b_y[i],
+            route_b_y[i + 1]
+        ]
+
+        ax.plot(
+            x,
+            y,
+            linestyle="--",
+            linewidth=3,
+            label=(
+                "Route B"
+                if i == 0
+                else None
+            )
+        )
 
 
-    # ------------------------------
     # Locations
-    # ------------------------------
 
     ax.scatter(
         1,
         4,
-        s=120,
-        label="Rangpo"
+        s=130,
+        marker="o"
     )
 
     ax.scatter(
         7,
         1,
-        s=120,
-        label="Gangtok"
+        s=130,
+        marker="o"
     )
-
-
-    # ------------------------------
-    # Vehicle
-    # ------------------------------
-
-    vehicle = get_vehicle(
-        load_vehicle_data(
-            st.session_state.vehicles
-        ),
-        vehicle_id
-    )
-
-    if vehicle is not None:
-
-        ax.scatter(
-            3.5,
-            3.3,
-            s=180,
-            marker="o",
-            label="🚚 Vehicle"
-        )
-
-
-    # ------------------------------
-    # Labels
-    # ------------------------------
 
     ax.text(
-        0.8,
+        0.75,
         4.25,
         "Rangpo"
     )
@@ -426,13 +533,35 @@ with map_col:
     )
 
 
+    # Vehicle
+
+    vehicle_data = (
+        load_vehicle_data(
+            st.session_state.vehicles
+        )
+    )
+
+    vehicle = get_vehicle(
+        vehicle_data,
+        vehicle_id
+    )
+
+    if vehicle is not None:
+
+        ax.scatter(
+            3.5,
+            3.3,
+            s=180,
+            marker="o",
+            label="Vehicle"
+        )
+
+
     ax.set_title(
         "Synthetic NER Transportation Network"
     )
 
-    ax.legend(
-        loc="upper right"
-    )
+    ax.legend()
 
     ax.axis("off")
 
@@ -449,9 +578,49 @@ with map_col:
 with route_col:
 
     st.markdown(
-        '<div class="section-title">🧭 Route Recommendation</div>',
+        '<div class="section-title">'
+        '🧭 Route Recommendation'
+        '</div>',
         unsafe_allow_html=True
     )
+
+    if route_result:
+
+        st.success(
+            "✓ Safest available route selected"
+        )
+
+        st.info(
+            " → ".join(route_path)
+        )
+
+        st.write(
+            f"**Distance:** "
+            f"{total_distance:.1f} km"
+        )
+
+        st.write(
+            f"**Travel Time:** "
+            f"{total_time:.0f} min"
+        )
+
+        st.write(
+            f"**Average Risk:** "
+            f"{average_risk:.0f}%"
+        )
+
+        st.write(
+            f"**Route Cost:** "
+            f"{route_cost:.2f}"
+        )
+
+    else:
+
+        st.error(
+            "🚨 No safe route available."
+        )
+
+    st.divider()
 
     for _, route in routes.iterrows():
 
@@ -460,55 +629,52 @@ with route_col:
         level = route["risk_level"]
 
         if level == "LOW":
-
             status = "🟢 LOW RISK"
 
         elif level == "MEDIUM":
-
             status = "🟡 MEDIUM RISK"
 
         else:
-
             status = "🔴 HIGH RISK"
-
 
         st.markdown(
             f"""
             <div class="route-card">
 
             <div class="route-name">
-                Route {route['route_id']}
+                {route['route_id']} —
+                {route['route_name']}
             </div>
 
             <br>
 
             <b>Risk:</b> {risk:.0f}%<br>
             <b>Status:</b> {status}<br>
-            <b>Distance:</b> {route['distance_km']} km<br>
-            <b>Travel Time:</b> {route['travel_time_min']} min
+            <b>Distance:</b>
+            {route['distance_km']} km<br>
+            <b>Travel Time:</b>
+            {route['travel_time_min']} min
 
             </div>
             """,
             unsafe_allow_html=True
         )
 
-
-        if route["route_id"] == best_route:
+        if route["route_id"] in best_route_ids:
 
             st.success(
-                f"✓ Route {best_route} recommended"
+                "✓ Part of recommended path"
             )
-
 
         if route["blockage"] == 1:
 
             st.error(
-                "🚧 Road blocked"
+                "🚧 ROAD BLOCKED"
             )
 
 
 # ============================================================
-# WEATHER + TRAFFIC
+# WEATHER
 # ============================================================
 
 st.divider()
@@ -519,7 +685,9 @@ weather_col, traffic_col = st.columns(2)
 with weather_col:
 
     st.markdown(
-        '<div class="section-title">🌧️ Weather Intelligence</div>',
+        '<div class="section-title">'
+        '🌧️ Weather Intelligence'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -533,7 +701,8 @@ with weather_col:
                 "location",
                 "rainfall_mm",
                 "weather_condition",
-                "weather_risk"
+                "weather_risk",
+                "weather_status"
             ]
         ],
         use_container_width=True,
@@ -541,10 +710,16 @@ with weather_col:
     )
 
 
+# ============================================================
+# TRAFFIC
+# ============================================================
+
 with traffic_col:
 
     st.markdown(
-        '<div class="section-title">🚦 Traffic Intelligence</div>',
+        '<div class="section-title">'
+        '🚦 Traffic Intelligence'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -572,13 +747,17 @@ with traffic_col:
 st.divider()
 
 st.markdown(
-    '<div class="section-title">🚨 Recent Alerts</div>',
+    '<div class="section-title">'
+    '🚨 Recent Alerts'
+    '</div>',
     unsafe_allow_html=True
 )
 
 if st.session_state.alerts:
 
-    for alert in st.session_state.alerts[:5]:
+    for alert in (
+        st.session_state.alerts[:5]
+    ):
 
         st.markdown(
             f"""
@@ -603,17 +782,10 @@ else:
 st.divider()
 
 st.markdown(
-    '<div class="section-title">🚚 Vehicle Tracking</div>',
+    '<div class="section-title">'
+    '🚚 Vehicle Tracking'
+    '</div>',
     unsafe_allow_html=True
-)
-
-vehicle_data = load_vehicle_data(
-    st.session_state.vehicles
-)
-
-vehicle = get_vehicle(
-    vehicle_data,
-    vehicle_id
 )
 
 if vehicle is not None:
@@ -642,13 +814,15 @@ if vehicle is not None:
 
 
 # ============================================================
-# FIELD INCIDENT REPORTING
+# INCIDENT REPORTING
 # ============================================================
 
 st.divider()
 
 st.markdown(
-    '<div class="section-title">📍 Field Incident Reporting</div>',
+    '<div class="section-title">'
+    '📍 Field Incident Reporting'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -699,7 +873,8 @@ if st.button(
 ):
 
     incident_id = (
-        f"INC{len(st.session_state.incidents) + 1:03d}"
+        f"INC"
+        f"{len(st.session_state.incidents) + 1:03d}"
     )
 
     new_incident = create_incident(
@@ -709,15 +884,18 @@ if st.button(
         severity
     )
 
-    st.session_state.incidents = add_incident(
-        st.session_state.incidents,
-        new_incident
+    st.session_state.incidents = (
+        add_incident(
+            st.session_state.incidents,
+            new_incident
+        )
     )
 
     st.session_state.alerts.insert(
         0,
         f"📍 {incident_type} reported at "
-        f"{incident_location} — {severity} severity"
+        f"{incident_location} — "
+        f"{severity} severity"
     )
 
     st.success(
@@ -734,9 +912,14 @@ if st.button(
 st.markdown(
     """
     <div class="resoroute-footer">
-        ResORoute • AI-Powered Smart Routing & Risk Intelligence
+
+        ResORoute • AI-Powered Smart Routing &
+        Risk Intelligence
+
         <br>
+
         SIH26002 • Prototype using Synthetic Data
+
     </div>
     """,
     unsafe_allow_html=True
